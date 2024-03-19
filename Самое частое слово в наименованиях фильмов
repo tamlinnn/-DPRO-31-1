@@ -1,0 +1,23 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.types import StringType
+
+spark = SparkSession.builder.appName("CSV_Analysis").getOrCreate()
+
+# Создаем DataFrame из CSV файла
+df = spark.read.csv('movies.csv', header=False, inferSchema=True, sep=',')
+
+# Преобразуем столбцы в нижний регистр
+df = df.withColumn('Film', df['Film'].lower())
+
+# Разделяем слова в столбце 'Film'
+words = df.select(F.explode(F.split('Film', ' ')).alias('word'))
+
+# Считаем количество вхождений каждого слова
+counts = words.groupBy('word').count().sort('count', ascending=False)
+
+# Выводим самое часто встречающееся слово
+print(f'Чаще всего встречается слово "{counts.first()[0]}" - {counts.first()[1]} раз')
+
+# Закрываем сессию
+spark.stop()
+
